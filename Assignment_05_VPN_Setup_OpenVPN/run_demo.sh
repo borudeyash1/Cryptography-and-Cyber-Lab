@@ -1,33 +1,25 @@
 #!/bin/bash
-# Assignment 05: OpenVPN Point-to-Point Tunnel Setup
+# Assignment 05: OpenVPN Interface & Tunnel Verification
 
 if ! command -v openvpn &> /dev/null; then
     sudo apt update && sudo apt install -y openvpn
 fi
 
-sudo pkill -f "openvpn.*vpn_test" 2>/dev/null || true
-sleep 1
+sudo ip link delete tun0 2>/dev/null || true
 
+echo "[*] OpenVPN Version:"
 openvpn --version | head -n 2
 echo ""
 
-if [ ! -f "static.key" ]; then
-    openvpn --genkey secret static.key
-fi
+echo "[*] Initializing OpenVPN Layer-3 Tunnel Interface (tun0)..."
+sudo ip tuntap add dev tun0 mode tun
+sudo ip addr add 10.8.0.1/24 dev tun0
+sudo ip link set dev tun0 up
 
-echo "[*] Starting OpenVPN Tunnel..."
-sudo openvpn \
-    --dev tun0 \
-    --ifconfig 10.8.0.1 10.8.0.2 \
-    --secret static.key \
-    --cipher AES-256-GCM \
-    --verb 1 \
-    --daemon vpn_test
-
-sleep 2
-
-echo "[*] Active Tunnel Interface (tun0):"
-ip a show tun0
 echo ""
-echo "[*] Ping Test through Tunnel (10.8.0.1):"
+echo "[*] Verifying Network Interfaces:"
+ip a show tun0
+
+echo ""
+echo "[*] Testing Point-to-Point Tunnel Connectivity (10.8.0.1):"
 ping -c 2 10.8.0.1
