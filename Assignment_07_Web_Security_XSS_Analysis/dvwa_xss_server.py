@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Assignment 07: DVWA-Identical Reflected XSS Lab Server
-Enables standalone offline demonstration without requiring Metasploitable2 VM.
+Enables standalone demonstration without requiring Metasploitable2 VM.
 """
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
@@ -34,7 +34,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <br>
         <div>
             <!-- VULNERABLE REFLECTION POINT EXACTLY LIKE DVWA LOW -->
-            {output}
+            __OUTPUT_PLACEHOLDER__
         </div>
     </div>
 </body>
@@ -59,7 +59,8 @@ class XSSHandler(BaseHTTPRequestHandler):
         else:
             rendered_output = ""
 
-        html = HTML_TEMPLATE.format(output=rendered_output)
+        # Using direct replace avoids Python .format() colliding with CSS { } blocks
+        html = HTML_TEMPLATE.replace("__OUTPUT_PLACEHOLDER__", rendered_output)
         self.wfile.write(html.encode('utf-8'))
 
     def log_message(self, format, *args):
@@ -76,4 +77,3 @@ def run(port=8000):
 
 if __name__ == '__main__':
     run()
-
